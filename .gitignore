@@ -1,0 +1,16 @@
+*#
+*.xvg
+*.trr
+*.gro
+*.tpr
+*.log
+*.xtc
+*.edr
+*.mdp
+*.top
+*.cpt
+
+*.png
+*.a
+*.out
+bin/
