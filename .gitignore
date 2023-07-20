@@ -9,8 +9,12 @@
 *.mdp
 *.top
 *.cpt
+*.ndx
+*.xtc_offsets.*
 
 *.png
 *.a
 *.out
 bin/
+
+.vscode
