@@ -4,9 +4,9 @@ F90 = gfortran
 RM = trash
 LIBGMXFLAGS = -I/usr/local/include `pkg-config --libs libgmxfort`
 F90FLAGS = -Wall
-PROGRAMS = diffusion
+PROGRAMS = bin/diffusion bin/linreg
 
-all: setup bin/$(PROGRAMS)
+all: setup $(PROGRAMS)
 
 bin/%: scripts/%.f90
 		$(F90) $^ -o $@ $(F90FLAGS) $(LIBGMXFLAGS)
