@@ -16,5 +16,6 @@
 *.a
 *.out
 bin/
+build/
 
 .vscode
