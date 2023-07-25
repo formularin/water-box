@@ -1,4 +1,4 @@
-	subroutine spherenoncube(box,boy,boz,a,v)
+	subroutine spherenoncube(box_dims,v,dr)
 	! program spherenoncube
 ************************************************************************
 * volume of a sphere of radius r inside a non-cube                     *
@@ -7,20 +7,24 @@
 ************************************************************************
         
 	implicit none
-	real*8 r,dr,nr,a,r1,r2,r3,pi,rr,box,boy,boz,b(4)
+	real*8 box_dims(1:3)
+	real*8 r,dr,r1,r2,r3,pi,rr,box,boy,boz,b(4)
 	real*8 L1,L2,L3,L4,L5,L6,L7,ss,ss1,ss2,ss3
         real*8 limit0,limit1,b_func,func,dv
-	integer i,nrmax
+	integer i,nr,nrmax
 	parameter (nrmax=5000)
 	real*8 v(0:nrmax)
         common /sphere/r,b_func
         external func
 	
 
-	box=1
-	boy=2
-	boz=3
-	dr=0.0005
+	box=box_dims(1)
+	boy=box_dims(2)
+	boz=box_dims(3)
+	! box=1
+	! boy=2
+	! boz=3
+	! dr=0.0005
 	nr=int(sqrt((box/2)**2 + (boy/2)**2 + (boz/2)**2)/dr)+1
 	v(0)=0.
 	do i=1,nr
@@ -230,12 +234,11 @@ c Compare L3 and L4
 	      endif
 	   end if
 	enddo
-	do i=1,nr-1
-	   dv=4*pi*((i*dr)**3-((i-1)*dr)**3)/3
-	   write(*,*)i*dr,(v(i)-v(i-1))/dv
-	enddo
-	
-	stop       
+	! do i=1,nr-1
+	!    dv=4*pi*((i*dr)**3-((i-1)*dr)**3)/3
+	!    write(*,*)i*dr,(v(i)-v(i-1))/dv
+	! enddo
+
 	end
 	
 	function func(y)
@@ -273,9 +276,6 @@ c       stop'problem evaluating func'
 
 	RETURN
 	END
-
-
-
 
 
 
