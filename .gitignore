@@ -11,6 +11,7 @@
 *.cpt
 *.ndx
 *.xtc_offsets.*
+*.mod
 
 *.png
 *.a

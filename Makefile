@@ -10,7 +10,7 @@ PROGRAMS = bin/diffusion bin/linreg bin/rdf
 
 all: setup $(PROGRAMS)
 
-bin/%: scripts/%.f90 build/spherenoncube.o
+bin/%: build/spherenoncube.o scripts/%.f90
 	$(F90) $^ -o $@ $(F90FLAGS) $(LIBGMXFLAGS)
 
 build/spherenoncube.o: scripts/spherenoncube.f
