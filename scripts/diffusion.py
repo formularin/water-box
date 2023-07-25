@@ -1,3 +1,6 @@
+"""Diffusivity program taken from: https://github.com/simongravelle/gromacs-input-files/blob/main/water-in-box/diff_coeff_mda.py
+"""
+
 import MDAnalysis as mda
 import MDAnalysis.analysis.msd as msd
 import numpy as np
