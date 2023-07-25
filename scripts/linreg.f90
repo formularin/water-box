@@ -46,8 +46,8 @@ program linreg
     m = (n*sum_xy - sum_x*sum_y) / (n*sum_x2 - sum_x**2)
     b = (sum_y - m*sum_x) / n
 
-    write (*, "(A, F15.10)") "m: ", m
-    write (*, "(A, F15.10)") "b: ", b
+    write (*, "(A, F0.10)") "m: ", m
+    write (*, "(A, F0.10)") "b: ", b
 
     close(10)
 
