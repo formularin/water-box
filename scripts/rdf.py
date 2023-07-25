@@ -4,13 +4,12 @@ written by Arin Khare
 
 usage: python3 rdf.py <traj.xtc> <top.gro> <output_path>
 
-- Outputs a CSV file containing these columns:
+- Outputs an XVG file containing these columns:
     - The right edge of each bin, in nm
     - The frequency of distances for each bin (averaged over all frames)
     - The total volume for each bin
     - The number density corresponding to each bin
     - The normalized RDF value for each bin
-- As a test, this should return the same results for trajectories before and after running gmx trjconv
 """
 
 import itertools

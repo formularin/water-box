@@ -24,6 +24,7 @@ program rdf
     ! Program-specific declarations
     real*8, parameter :: dt = 0.004  ! Nanoseconds
     integer, parameter :: nrmax = 5000  ! This must match nrmax of spherenoncube
+    real*8, parameter :: pi = 4.d0*atan(1.0)
 
     type(Trajectory) :: trj
     integer :: num_bins, i, f, j, bin, freq
@@ -33,7 +34,6 @@ program rdf
     integer, dimension(:), allocatable :: frequencies
     real*8, dimension(0:nrmax) :: box_volumes
     real*8, dimension(1:3) :: box, disp
-    ! real*8, parameter :: pi = 4.d0*atan(1.0)
 
     ! Start timing program
     call system_clock(count_init, count_rate, count_max)
@@ -82,6 +82,7 @@ program rdf
         endif
         avg_num_density = avg_num_density + box(1) * box(2) * box(3)
     enddo
+    ! This ensures the binning algorithm works even if there is a distance precisely equal to the maximum.
     max_dist = max_dist + 0.0001
     avg_num_density = trj%natoms("OW") / (avg_num_density / trj%nframes)
 
@@ -91,6 +92,7 @@ program rdf
     volumes = 0
     do f=1, trj%nframes
         call get_box(trj%box(f), box)
+        ! box = (/2.3, 2.3, 2.3/)
         call spherenoncube(box, box_volumes, dr)
         do i=1, num_bins
             volumes(i) = volumes(i) + box_volumes(i) * trj%natoms("OW")
@@ -130,6 +132,7 @@ program rdf
     do i=1, num_bins
         edge = dr * i
         freq = frequencies(i)
+        ! vol = volumes(i) / (trj%nframes * trj%natoms("OW"))
         vol = volumes(i)
         rdf_u = rdf_unnorm(i)
         rdf_n = rdf_norm(i)

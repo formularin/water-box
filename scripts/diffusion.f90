@@ -1,6 +1,6 @@
 ! Computes the diffusion coefficient of liquid water. Stores the MSD as a time series.
 ! Written by Arin Khare
-! Options: -xtc, -ndx, -num_samples, , -sample_size, -o
+! Options: -xtc, -ndx, -num_samples, -sample_size, -o
 
 program diffusion
     
