@@ -14,9 +14,14 @@
 *.mod
 
 *.png
+*.mp4
+*.mpg
+
 *.a
 *.out
 bin/
 build/
 
 .vscode
+
+TODO.md

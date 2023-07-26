@@ -76,7 +76,7 @@ program rdf
     avg_num_density = 0
     do f=1, trj%nframes
         call get_box(trj%box(f), box)
-        diag = get_magnitude(box)
+        diag = get_magnitude(box / 2)
         if (diag > max_dist) then
             max_dist = diag
         endif
@@ -95,8 +95,11 @@ program rdf
         ! box = (/2.3, 2.3, 2.3/)
         call spherenoncube(box, box_volumes, dr)
         do i=1, num_bins
-            volumes(i) = volumes(i) + box_volumes(i) * trj%natoms("OW")
-            ! volumes(i) = volumes(i) + (4. / 3) * pi * ((dr * i) ** 3 - (dr * (i - 1)) ** 3) * trj%natoms("OW")
+            ! Volume is zero if inner radius is greater than max box dimension
+            if (dr * (i - 1) < max(box(1), box(2), box(3))) then
+                volumes(i) = volumes(i) + (box_volumes(i) - box_volumes(i - 1)) * trj%natoms("OW")
+                ! volumes(i) = volumes(i) + (4. / 3) * pi * ((dr * i) ** 3 - (dr * (i - 1)) ** 3) * trj%natoms("OW")
+            endif
         enddo
     enddo
     write(*, "(A)") "done."
