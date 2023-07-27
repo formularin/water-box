@@ -17,7 +17,7 @@ program count_waters
     ! Program-specific declarations
     type(Trajectory) :: trj
     integer :: i, f, count, max_count
-    real :: radius
+    real :: radius, avg_cell_vol
     ! Index - 1 indicates number of waters
     ! Value indicates probability
     real, dimension(:), allocatable :: distribution
@@ -56,9 +56,11 @@ program count_waters
     allocate(distribution(1:trj%natoms("OW")))
     distribution = 0
     max_count = 0
+    avg_cell_vol = 0
     do f=1, trj%nframes
         write(*, "(A, I0)", advance="no") "\rOn frame ", f
         call get_box(trj%box(f), box)
+        avg_cell_vol = avg_cell_vol + box(1) * box(2) * box(3)
         count = 0
         do i=1, trj%natoms("OW")
             disp = get_min_image(center - trj%x(f, i, "OW"), box)
@@ -72,6 +74,7 @@ program count_waters
         distribution(count + 1) = distribution(count + 1) + 1
     enddo
     distribution = distribution / trj%nframes
+    avg_cell_vol = avg_cell_vol / trj%nframes
     write(*, "(A)") "\ndone."
 
     write(*, "(A)") "Writing to "//trim(output_file)//"..."
@@ -81,6 +84,8 @@ program count_waters
         stop
     endif
 
+    write(unit=10, fmt="(A, F0.5)") "# Average cell volume = ", avg_cell_vol
+    write(unit=10, fmt="(A, I0)") "# Number of waters = ", trj%natoms("OW")
     do i=1, max_count + 1
         write(unit=10, fmt="(I9, F25.17)") i - 1, distribution(i)
     enddo
