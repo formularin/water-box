@@ -38,6 +38,11 @@ def main():
         plt.ylabel("P(N)")
 
     plt.legend(ncol=2)
+    plt.yticks(np.arange(0, 0.9, 0.1), minor=True)
+    plt.xticks(np.arange(0, 130, 10), minor=True)
+    plt.tick_params(which='minor', length=0)
+    plt.grid()
+    plt.grid(which='minor', alpha=0.3)
     plt.gcf().set_size_inches(15, 5)
     plt.savefig(f"count_waters/all_hists.png", dpi=100)
     plt.clf()
@@ -66,6 +71,11 @@ def main():
     plt.xlabel("Radius (nm)")
     plt.ylabel("Number of waters")
     plt.legend()
+    plt.xticks(np.arange(0, 1, 0.05), minor=True)
+    plt.yticks(np.arange(0, 130, 10), minor=True)
+    plt.tick_params(which='minor', length=0)
+    plt.grid()
+    plt.grid(which='minor', alpha=0.3)
     plt.gcf().set_size_inches(10, 10)
     plt.savefig("count_waters/boxplot.png", dpi=100)
 
