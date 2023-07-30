@@ -11,10 +11,13 @@ program diffusion
     real, parameter :: dt = 0.004  ! Nanoseconds
 
     type(Trajectory) :: trj
-    integer :: num_samples, f0_interval, sample, sample_size, f0, f, oxygen, err_status, i, delta
-    integer :: count_init, count_final, count_rate, count_max
+    integer :: num_samples, f0_interval, sample, sample_size, f0, f, oxygen, err_status, i, delta, d
+    integer :: count_init, count_final, count_rate, count_max, side
     real :: dist, time_init, time_final, elapsed_time
+    real, dimension(3) :: pos, move, box, pos_0
     real, dimension(:), allocatable :: squared_disp
+    real, dimension(:, :), allocatable :: unwrap_terms
+    real, dimension(:, :, :), allocatable :: coords
     integer, dimension(:), allocatable :: sample_freqs
     character(256) :: arg, traj_file, index_file, num_samples_str, err_iomsg, output_file, sample_size_str
 
@@ -23,8 +26,8 @@ program diffusion
 
     traj_file = "prd.xtc"
     index_file = "prd.ndx"
-    num_samples_str = "100"
-    sample_size_str = "10000"
+    num_samples_str = "5"
+    sample_size_str = "500"
     output_file = "msd.xvg"
 
     do i=0, command_argument_count()
@@ -48,26 +51,61 @@ program diffusion
     f0_interval = trj%nframes / num_samples
     read(sample_size_str, *) sample_size
 
-    allocate(squared_disp(1:trj%nframes))
-    allocate(sample_freqs(1:trj%nframes))
+    allocate(squared_disp(1:sample_size))
+    allocate(sample_freqs(1:sample_size))
+    allocate(unwrap_terms(1:trj%natoms("OW"), 1:3))
+    allocate(coords(1:trj%nframes, 1:trj%natoms("OW"), 1:3))
     squared_disp = 0.0
     sample_freqs = 0
 
+    ! Unwrap coordinates
+    do oxygen=1, trj%natoms("OW")
+        do d=1, 3
+            unwrap_terms(oxygen, d) = 0
+        enddo
+    enddo
+
+    do f=1, trj%nframes
+        do oxygen=1, trj%natoms("OW")
+            pos = trj%x(f, oxygen, "OW")
+            call get_box(trj%box(f), box)
+            if (f == 1) then
+                move = (/0, 0, 0/)
+            else
+                move = pos - trj%x(f - 1, oxygen, "OW")
+            endif
+            do d=1, 3
+                if (move(d) > (box(d) / 2)) then
+                    side = 1
+                    if (move(d) > 0) then
+                        side = -1
+                    endif
+                    unwrap_terms(oxygen, d) = unwrap_terms(oxygen, d) + box(d) * side
+                endif
+                coords(f, oxygen, d) = pos(d) + unwrap_terms(oxygen, d)
+            enddo
+        enddo
+    enddo
+
     write(*, "(I0, A)") num_samples, " samples"
+    squared_disp = 0
+    sample_freqs = 0
     do sample=1, num_samples
         f0 = (sample - 1) * f0_interval + 1
         write(*, "(A, I0)", advance="no") "\rTaking sample ", sample
         do f=f0, min(trj%nframes, f0 + sample_size)
             delta = (f - f0) + 1
             do oxygen=1, trj%natoms("OW")
-                dist = get_squared_dist(trj%x(f, oxygen, "OW"), trj%x(f0, oxygen, "OW"))
+                pos_0 = coords(f0, oxygen, 1:3)
+                pos = coords(f, oxygen, 1:3)
+                dist = get_squared_dist(pos, pos_0)
                 squared_disp(delta) = squared_disp(delta) + dist
             enddo
             sample_freqs(delta) = sample_freqs(delta) + trj%natoms("OW")
         enddo
     enddo
     write(*, "(A)") "\ndone."
-    write(*, "(A, A)")  "Writing to ", output_file
+    write(*, "(A)")  "Writing to "//trim(output_file)
 
     squared_disp = squared_disp / sample_freqs
 
@@ -77,7 +115,7 @@ program diffusion
         stop
     endif
 
-    do f=1, trj%nframes
+    do f=1, sample_size
         write (unit=10, fmt="(F10.3, A, F25.17)") (f-1)*dt, "  ", squared_disp(f)
     enddo
 
@@ -94,13 +132,23 @@ program diffusion
 contains
     real function get_squared_dist(r1, r2)
         real, dimension(3) :: r1, r2
-        integer :: d
+        integer :: dim
         get_squared_dist = 0
-        do d=1, 3
-            ! get_squared_dist = get_squared_dist + (dx - box_dims(d) * nint(dx / box_dims(d))) ** 2
-            ! Are we supposed to not be using PBC?
-            get_squared_dist = get_squared_dist + (r1(d) - r2(d)) ** 2
+        do dim=1, 3
+            get_squared_dist = get_squared_dist + (r1(dim) - r2(dim)) ** 2
         enddo
     end function get_squared_dist
+
+    ! Moves values from 2-d output from libgmxfort trj%box(f) into 1-d array of length 3
+    subroutine get_box(trj_box, f_box)
+        implicit none
+        real, dimension(1:3, 1:3) :: trj_box
+        real, dimension(1:3) :: f_box
+
+        f_box(1) = trj_box(1, 1)
+        f_box(2) = trj_box(2, 2)
+        f_box(3) = trj_box(3, 3)
+
+    end subroutine get_box
 
 end program diffusion
