@@ -1,6 +1,8 @@
 ! Computes the diffusion coefficient of liquid water. Stores the MSD as a time series.
 ! Written by Arin Khare
 ! Options: -xtc, -ndx, -num_samples, -sample_size, -o
+! Requires unwrapped coordinates if PBC are used.
+! This can be done using the command: gmx trjconv -f prd.xtc -pbc nojump -o prd-unwrapped.xtc
 
 program diffusion
     
@@ -11,20 +13,17 @@ program diffusion
     real, parameter :: dt = 0.004  ! Nanoseconds
 
     type(Trajectory) :: trj
-    integer :: num_samples, f0_interval, sample, sample_size, f0, f, oxygen, err_status, i, delta, d
-    integer :: count_init, count_final, count_rate, count_max, side
+    integer :: num_samples, f0_interval, sample, sample_size, f0, f, oxygen, err_status, i, delta
+    integer :: count_init, count_final, count_rate, count_max
     real :: dist, time_init, time_final, elapsed_time
-    real, dimension(3) :: pos, move, box, pos_0
     real, dimension(:), allocatable :: squared_disp
-    real, dimension(:, :), allocatable :: unwrap_terms
-    real, dimension(:, :, :), allocatable :: coords
     integer, dimension(:), allocatable :: sample_freqs
     character(256) :: arg, traj_file, index_file, num_samples_str, err_iomsg, output_file, sample_size_str
 
     call system_clock(count_init, count_rate, count_max)
     time_init = count_init * 1.0 / count_rate
 
-    traj_file = "prd.xtc"
+    traj_file = "prd-unwrapped.xtc"
     index_file = "prd.ndx"
     num_samples_str = "5"
     sample_size_str = "500"
@@ -53,39 +52,8 @@ program diffusion
 
     allocate(squared_disp(1:sample_size))
     allocate(sample_freqs(1:sample_size))
-    allocate(unwrap_terms(1:trj%natoms("OW"), 1:3))
-    allocate(coords(1:trj%nframes, 1:trj%natoms("OW"), 1:3))
     squared_disp = 0.0
     sample_freqs = 0
-
-    ! Unwrap coordinates
-    do oxygen=1, trj%natoms("OW")
-        do d=1, 3
-            unwrap_terms(oxygen, d) = 0
-        enddo
-    enddo
-
-    do f=1, trj%nframes
-        do oxygen=1, trj%natoms("OW")
-            pos = trj%x(f, oxygen, "OW")
-            call get_box(trj%box(f), box)
-            if (f == 1) then
-                move = (/0, 0, 0/)
-            else
-                move = pos - trj%x(f - 1, oxygen, "OW")
-            endif
-            do d=1, 3
-                if (move(d) > (box(d) / 2)) then
-                    side = 1
-                    if (move(d) > 0) then
-                        side = -1
-                    endif
-                    unwrap_terms(oxygen, d) = unwrap_terms(oxygen, d) + box(d) * side
-                endif
-                coords(f, oxygen, d) = pos(d) + unwrap_terms(oxygen, d)
-            enddo
-        enddo
-    enddo
 
     write(*, "(I0, A)") num_samples, " samples"
     squared_disp = 0
@@ -96,9 +64,7 @@ program diffusion
         do f=f0, min(trj%nframes, f0 + sample_size)
             delta = (f - f0) + 1
             do oxygen=1, trj%natoms("OW")
-                pos_0 = coords(f0, oxygen, 1:3)
-                pos = coords(f, oxygen, 1:3)
-                dist = get_squared_dist(pos, pos_0)
+                dist = get_squared_dist(trj%x(f, oxygen, "OW"), trj%x(f0, oxygen, "OW"))
                 squared_disp(delta) = squared_disp(delta) + dist
             enddo
             sample_freqs(delta) = sample_freqs(delta) + trj%natoms("OW")
