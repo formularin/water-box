@@ -15,8 +15,8 @@ program diffusion
     type(Trajectory) :: trj
     integer :: num_samples, f0_interval, sample, sample_size, f0, f, oxygen, err_status, i, delta
     integer :: count_init, count_final, count_rate, count_max
-    real :: dist, time_init, time_final, elapsed_time
-    real, dimension(:), allocatable :: squared_disp
+    real :: dist, time_init, time_final, elapsed_time, slope, y_int
+    real, dimension(:), allocatable :: squared_disp, times
     integer, dimension(:), allocatable :: sample_freqs
     character(256) :: arg, traj_file, index_file, num_samples_str, err_iomsg, output_file, sample_size_str
 
@@ -51,6 +51,7 @@ program diffusion
     read(sample_size_str, *) sample_size
 
     allocate(squared_disp(1:sample_size))
+    allocate(times(1:sample_size))
     allocate(sample_freqs(1:sample_size))
     squared_disp = 0.0
     sample_freqs = 0
@@ -70,10 +71,20 @@ program diffusion
             sample_freqs(delta) = sample_freqs(delta) + trj%natoms("OW")
         enddo
     enddo
-    write(*, "(A)") "\ndone."
-    write(*, "(A)")  "Writing to "//trim(output_file)
-
     squared_disp = squared_disp / sample_freqs
+    write(*, "(A)") "\ndone."
+
+    write(*, "(A)") "Performing linear regression on MSD timeseries..."
+    do delta=1, sample_size
+        times(delta) = delta * dt
+    enddo
+    call linreg(times, squared_disp, sample_size, slope, y_int)
+    write(*, "(A)") "done."
+    write(*, "(A, F0.7, A)") "Slope: ", slope, "nm/ns"
+    write(*, "(A, F0.7, A)") "Y-intercept: ", y_int, "nm"
+    write(*, "(A, F0.7, A)") "Diffusivity: ", slope / 6, "µm/ms"
+
+    write(*, "(A)")  "Writing MSD timeseries to "//trim(output_file)//"..."
 
     open(unit=10, file=output_file, iostat=err_status, iomsg=err_iomsg)
     if (err_status /= 0) then
@@ -96,6 +107,28 @@ program diffusion
     write (*, "(A, F0.5, A)") "Wall time: ", elapsed_time, "s"
 
 contains
+    subroutine linreg(x, y, n, m, b)
+        implicit none
+        integer :: j, n
+        real :: sum_x, sum_y, sum_xy, sum_x2, m, b
+        real, dimension(n) :: x, y
+
+        sum_x = 0
+        sum_y = 0
+        sum_xy = 0
+        sum_x2 = 0
+        do j=1, n
+            sum_x = sum_x + x(j)
+            sum_y = sum_y + y(j)
+            sum_xy = sum_xy + x(j) * y(j)
+            sum_x2 = sum_x2 + x(j) ** 2
+        enddo
+
+        m = (n*sum_xy - sum_x*sum_y) / (n*sum_x2 - sum_x**2)
+        b = (sum_y - m*sum_x) / n
+
+    end subroutine linreg
+
     real function get_squared_dist(r1, r2)
         real, dimension(3) :: r1, r2
         integer :: dim
