@@ -80,9 +80,9 @@ program diffusion
     enddo
     call linreg(times, squared_disp, sample_size, slope, y_int)
     write(*, "(A)") "done."
-    write(*, "(A, F0.7, A)") "Slope: ", slope, "nm/ns"
-    write(*, "(A, F0.7, A)") "Y-intercept: ", y_int, "nm"
-    write(*, "(A, F0.7, A)") "Diffusivity: ", slope / 6, "µm/ms"
+    write(*, "(A, F0.7, A)") "Slope: ", slope, "nm^2/ns"
+    write(*, "(A, F0.7, A)") "Y-intercept: ", y_int, "nm^2"
+    write(*, "(A, F0.7, A)") "Diffusivity: ", slope / 6, "µm^2/ms"
 
     write(*, "(A)")  "Writing MSD timeseries to "//trim(output_file)//"..."
 
