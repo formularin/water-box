@@ -10,11 +10,14 @@ PROGRAMS = bin/diffusion bin/rdf bin/count_waters
 
 all: setup $(PROGRAMS)
 
-bin/%: build/spherenoncube.o scripts/%.f90
+bin/%: build/utils.o build/spherenoncube.o scripts/%.f90
 	$(F90) $^ -o $@ $(F90FLAGS) $(LIBGMXFLAGS)
 
 build/spherenoncube.o: scripts/spherenoncube.f
 	$(F77) -c $^ $(F77FLAGS) -o $@
+
+build/utils.o: scripts/utils.f90
+	$(F90) -c $^ $(F90FLAGS) -o $@
 
 setup:
 	mkdir -p bin build

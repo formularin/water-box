@@ -6,6 +6,8 @@
 program count_waters
 
     use gmxfort_trajectory
+    use gmxfort_utils
+    use waterbox_utils
 
     implicit none
 
@@ -21,7 +23,7 @@ program count_waters
     ! Index - 1 indicates number of waters
     ! Value indicates probability
     real, dimension(:), allocatable :: distribution
-    real, dimension(1:3) :: box, disp, center
+    real, dimension(1:3) :: box, center
     parameter (center = (/1., 1., 1./))
 
     ! Start timing program
@@ -59,12 +61,11 @@ program count_waters
     avg_cell_vol = 0
     do f=1, trj%nframes
         write(*, "(A, I0)", advance="no") "\rOn frame ", f
-        call get_box(trj%box(f), box)
+        call flatten_box(trj%box(f), box)
         avg_cell_vol = avg_cell_vol + box(1) * box(2) * box(3)
         count = 0
         do i=1, trj%natoms("OW")
-            disp = get_min_image(center - trj%x(f, i, "OW"), box)
-            if (get_magnitude(disp) < radius) then
+            if (distance(dble(center), dble(trj%x(f, i, "OW")), dble(trj%box(f))) < radius) then
                 count = count + 1
             endif
         enddo
@@ -99,42 +100,4 @@ program count_waters
     elapsed_time = time_final - time_init
 
     write (*, "(A, F0.5, A)") "Wall time: ", elapsed_time, "s"
-
-contains
-
-    ! Magnitude of a 3-d vector
-    real function get_magnitude(x)
-        implicit none
-        real, dimension(1:3) :: x
-        integer :: d
-        get_magnitude = 0
-        do d=1, 3
-            get_magnitude = get_magnitude + x(d) ** 2
-        enddo
-        get_magnitude = sqrt(get_magnitude)
-    end function get_magnitude
-
-    ! Adjusts all values in xr (displacement vector) according to the minimum image convention.
-    function get_min_image(xr, box_dims)
-        implicit none
-        real, dimension(1:3) :: box_dims, get_min_image
-        real, dimension(1:3) :: xr
-        integer :: d
-        do d=1, 3
-            get_min_image(d) = xr(d) - box_dims(d) * nint(xr(d) / box_dims(d))
-        enddo
-    end function get_min_image
-
-    ! Moves values from 2-d output from libgmxfort trj%box(f) into 1-d array of length 3
-    subroutine get_box(trj_box, f_box)
-        implicit none
-        real, dimension(1:3, 1:3) :: trj_box
-        real, dimension(1:3) :: f_box
-
-        f_box(1) = trj_box(1, 1)
-        f_box(2) = trj_box(2, 2)
-        f_box(3) = trj_box(3, 3)
-
-    end subroutine get_box
-
 end program count_waters
