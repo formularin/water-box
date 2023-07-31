@@ -1,8 +1,9 @@
-"""Runs the count_waters fortran script for spherical volumes of multiple radii and conducts various analyses.
+"""Runs the count_waters fortran script for spherical volumes of multiple radii and makes plots.
 Written by Arin Khare
 """
 
 import math
+import os
 import shlex
 import subprocess
 
@@ -11,6 +12,11 @@ import matplotlib.pyplot as plt
 
 
 def main():
+    try:
+        os.mkdir("results/count_waters")
+    except FileExistsError:
+        pass
+
     # Plot all histograms
     all_data = []
     for i in range(10, 100, 5):
@@ -18,7 +24,7 @@ def main():
         if i % 10 == 0:
             r = r + "0"
 
-        subprocess.run(shlex.split(f"bin/count_waters -r {r} -o count_waters/{r}.xvg"), capture_output=True)
+        subprocess.run(shlex.split(f"bin/count_waters -r {r} -o results/count_waters/{r}.xvg"), capture_output=True)
         
         with open(f"count_waters/{r}.xvg", "r") as f:
             lines = f.read().strip().split("\n")
@@ -44,16 +50,8 @@ def main():
     plt.grid()
     plt.grid(which='minor', alpha=0.3)
     plt.gcf().set_size_inches(15, 5)
-    plt.savefig(f"count_waters/all_hists.png", dpi=100)
+    plt.savefig(f"results/count_waters/all_hists.png", dpi=100)
     plt.clf()
-
-    # Add zeros to the end of all_data so it can become a matrix
-    # max_len = max([len(data[1]) for data in all_data])
-    # for i, data in enumerate(all_data):
-    #     new_data = np.zeros(shape=(2, max_len))
-    #     new_data[1][:len(data[1])] = data[1]
-    #     new_data[0] = np.arange(max_len)
-    #     all_data[i] = new_data
 
     # Reconstruct raw counts for boxplot
     raw_counts = []
@@ -77,7 +75,7 @@ def main():
     plt.grid()
     plt.grid(which='minor', alpha=0.3)
     plt.gcf().set_size_inches(10, 10)
-    plt.savefig("count_waters/boxplot.png", dpi=100)
+    plt.savefig("results/count_waters/boxplot.png", dpi=100)
 
 
 if __name__ == "__main__":

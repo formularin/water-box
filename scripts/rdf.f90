@@ -1,4 +1,4 @@
-! Calculates the O-O radial distribution function of water
+! Calculates the O-O radial distribution function of water, including the corners of the box.
 ! Written by Arin Khare
 ! Options: -xtc, -ndx, -num_bins, -o
 ! Note that the max number of bins is 5000
@@ -40,10 +40,10 @@ program rdf
     time_init = count_init * 1.0 / count_rate
 
     ! Read command-line args
-    traj_file = "prd.xtc"
-    index_file = "prd.ndx"
+    traj_file = "simulations/water/spce.xtc"
+    index_file = "simulations/water/spce.ndx"
     num_bins_str = "1000"
-    output_file = "rdf.xvg"
+    output_file = "results/rdf.xvg"
 
     do i=0, command_argument_count()
         call get_command_argument(i, arg)

@@ -2,7 +2,7 @@
 ! Written by Arin Khare
 ! Options: -xtc, -ndx, -num_samples, -sample_size, -o
 ! Requires unwrapped coordinates if PBC are used.
-! This can be done using the command: gmx trjconv -f prd.xtc -pbc nojump -o prd-unwrapped.xtc
+! This can be done using the command: gmx trjconv -f spce.xtc -pbc nojump -o spce-unwrapped.xtc
 
 program diffusion
     
@@ -23,11 +23,11 @@ program diffusion
     call system_clock(count_init, count_rate, count_max)
     time_init = count_init * 1.0 / count_rate
 
-    traj_file = "prd-unwrapped.xtc"
-    index_file = "prd.ndx"
+    traj_file = "simulations/water/spce-unwrapped.xtc"
+    index_file = "simulations/water/spce.ndx"
     num_samples_str = "5"
     sample_size_str = "500"
-    output_file = "msd.xvg"
+    output_file = "results/msd.xvg"
 
     do i=0, command_argument_count()
         call get_command_argument(i, arg)

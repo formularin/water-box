@@ -2,7 +2,7 @@
 Computes the O-O radial distribution function of water
 written by Arin Khare
 
-usage: python3 rdf.py <traj.xtc> <top.gro> <output_path>
+usage: python3 rdf.py -xtc -gro -o
 
 - Outputs an XVG file containing these columns:
     - The right edge of each bin, in nm
@@ -29,7 +29,7 @@ NUM_BINS = 1000
 def get_rdf(traj):
     print("Calculating volumes... ", end="", flush=True)
     oxygens = traj.topology.select("symbol == O")
-    max_dist = math.sqrt(3) * (np.max(traj.unitcell_volumes) ** (1 / 3) / 2)
+    max_dist = np.min(traj.unitcell_volumes) ** (1 / 3) / 2
     dr = max_dist / NUM_BINS
     # The value to divide by is the number of oxygens times the volume of the spherical shell,
     # since we are averaging over all oxygens. This will ensure we are actually calculating
@@ -46,8 +46,6 @@ def get_rdf(traj):
     print("Calculating distances... ", end="", flush=True)
     o_pairs = np.array(list(itertools.combinations(oxygens, 2)))
     distances = md.compute_distances(traj, o_pairs)  # Follows minimum image convention
-    plt.hist(distances[1000], bins=500)
-    plt.show()
     distances = np.ravel(distances)
     print("done")
 
@@ -83,12 +81,22 @@ def get_rdf(traj):
 
 if __name__ == "__main__":
     start_time = time.time()
-    outfile = sys.argv[3]
+    out_file = "results/rdf.xvg"
+    traj_file = "simulations/water/spce.xtc"
+    ndx_file = "simulations/water/spce.gro"
+
+    for i in range(1, len(sys.argv) - 1):
+        if sys.argv[i] == "-xtc":
+            traj_file = sys.argv[i + 1]
+        if sys.argv[i] == "-ndx":
+            ndx_file = sys.argv[i + 1]
+        if sys.argv[i] == "-o":
+            out_file = sys.argv[i + 1]
     print("Reading trajectory file... ", end="", flush=True)
-    traj = md.load(sys.argv[1], top=sys.argv[2])
+    traj = md.load(traj_file, top=ndx_file)
     print("done")
     rdf = get_rdf(traj)
-    print("Writing to file... ", end="", flush=True)
-    np.savetxt(outfile, rdf, delimiter="  ")
-    print(f"done. RDF data saved to {outfile}")
+    print(f"Writing to {out_file}... ", end="", flush=True)
+    np.savetxt(out_file, rdf, delimiter="  ")
+    print(f"done. RDF data saved to {out_file}")
     print(f"Program finished in {time.time() - start_time} seconds")

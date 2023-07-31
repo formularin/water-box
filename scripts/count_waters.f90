@@ -1,7 +1,7 @@
 ! Creates a probability distribution of the number of waters within a spherical volume at any given time.
 ! Written by Arin Khare
 ! Options: -xtc, -ndx, -r, -o
-! -r is the radius of the spherical volume (nm). Maximum value of 1.
+! -r is the radius of the spherical volume (nm).
 
 program count_waters
 
@@ -29,10 +29,10 @@ program count_waters
     time_init = count_init * 1.0 / count_rate
 
     ! Read command-line args
-    traj_file = "prd.xtc"
-    index_file = "prd.ndx"
+    traj_file = "simulations/water/spce.xtc"
+    index_file = "simulations/water/spce.ndx"
     radius_str = "0.3"
-    output_file = "count_waters.xvg"
+    output_file = "results/count_waters.xvg"
 
     do i=0, command_argument_count()
         call get_command_argument(i, arg)

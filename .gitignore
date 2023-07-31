@@ -23,5 +23,13 @@ bin/
 build/
 
 .vscode
+*.swp
 
 TODO.md
+
+!simulations/water/spce.gro
+!simulations/water/spce.xtc
+!simulations/water/spce.trr
+!simulations/water/spce.ndx
+!simulations/water/spce-unwrapped.xtc
+!simulations/water/mdp/*
