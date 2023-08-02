@@ -2,7 +2,7 @@
 Computes the O-O radial distribution function of water
 written by Arin Khare
 
-usage: python3 rdf.py -xtc -gro -o
+usage: python3 rdf.py -xtc <traj_file> -gro <gro_file> -o <output_file>
 
 - Outputs an XVG file containing these columns:
     - The right edge of each bin, in nm
@@ -85,12 +85,12 @@ if __name__ == "__main__":
     traj_file = "simulations/water/spce.xtc"
     ndx_file = "simulations/water/spce.gro"
 
-    for i in range(1, len(sys.argv) - 1):
+    for i in range(1, len(sys.argv)):
         if sys.argv[i] == "-xtc":
             traj_file = sys.argv[i + 1]
-        if sys.argv[i] == "-ndx":
+        elif sys.argv[i] == "-ndx":
             ndx_file = sys.argv[i + 1]
-        if sys.argv[i] == "-o":
+        elif sys.argv[i] == "-o":
             out_file = sys.argv[i + 1]
     print("Reading trajectory file... ", end="", flush=True)
     traj = md.load(traj_file, top=ndx_file)

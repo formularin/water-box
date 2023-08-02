@@ -26,7 +26,7 @@ def main():
 
         subprocess.run(shlex.split(f"bin/count_waters -r {r} -o results/count_waters/{r}.xvg"), capture_output=True)
         
-        with open(f"count_waters/{r}.xvg", "r") as f:
+        with open(f"results/count_waters/{r}.xvg", "r") as f:
             lines = f.read().strip().split("\n")
         avg_cell_vol = float(lines[0].split()[-1])
         num_waters = int(lines[1].split()[-1])
