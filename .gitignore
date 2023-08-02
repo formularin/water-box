@@ -19,11 +19,13 @@
 
 *.a
 *.out
+*.sh
 bin/
 build/
 
 .vscode
 *.swp
+.gnuplot
 
 TODO.md
 
@@ -33,3 +35,4 @@ TODO.md
 !simulations/water/spce.ndx
 !simulations/water/spce-unwrapped.xtc
 !simulations/water/mdp/*
+!simulations/water/water_box.sh

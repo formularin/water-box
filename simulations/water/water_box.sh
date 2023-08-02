@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Create a topol.top file containing the forcefield and water model:
-# # include oplsaa.ff/forcefield.itp
-# # include oplass.ff/spce.itp
+# #include "oplsaa.ff/forcefield.itp"
+# #include "oplsaa.ff/spce.itp"
 #
 # [ System ]
 # <name>
@@ -29,9 +29,10 @@ gmx grompp -f mdp/min2.mdp -o min2.tpr -pp min2.top -po min2.mdp -c min.gro
 gmx mdrun -s min2.tpr -o min2.trr -x min2.xtc -c min2.gro -e min2.edr -g min2.log
 
 # These commands parse the energy log and output the potential energy as a function of time in such a way that it can be plotted by gnuplot
-gmx energy -f min.edr -o min-energy.xvg
-gmx energy -f min2.edr -o min2-energy.xvg
-# Before running this command, go into the two XVG files and replace the @ symbols with #
+echo "Potential" | gmx energy -f min.edr -o min-energy.xvg
+echo "Potential" | gmx energy -f min2.edr -o min2-energy.xvg
+sed -i 's/@/#/g' min-energy.xvg
+sed -i 's/@/#/g' min2-energy.xvg
 gnuplot -e "set terminal png size 600, 450; set output 'min-energy.png'; plot 'min-energy.xvg' w l"
 gnuplot -e "set terminal png size 600, 450; set output 'min2-energy.png'; plot 'min2-energy.xvg' w l"
 
@@ -40,17 +41,19 @@ gnuplot -e "set terminal png size 600, 450; set output 'min2-energy.png'; plot '
 gmx grompp -f mdp/nvt.mdp -o nvt.tpr -pp nvt.top -po nvt.mdp -c min2.gro
 gmx mdrun -s nvt.tpr -o nvt.trr -x nvt.xtc -c nvt.gro -e nvt.edr -g nvt.log
 
-# Save the temperature for gnuplot - replace the @'s again
-gmx energy -f nvt.edr -o nvt.xvg
+echo "Temperature" | gmx energy -f nvt.edr -o nvt.xvg
+sed -i 's/@/#/g' nvt.xvg
 gnuplot -e "set terminal png size 600, 450; set output 'nvt.png'; plot 'nvt.xvg' w l"
 
 # NPT Equilibration
 # Changes the dimensions of the box so that the theoretical pressure (if the particles were to have collisions with the walls, instead of PBC) is equal to 1 bar.
-gmx grompp -f mdp/npt.mdp -o npt.tpr -pp npt.top -po npt.mdp -c npt.gro
-gmx mdrun -s npt.tpr -o npt.trr -x npt.xtc -c nvt.gro -e npt.edr -g npt.log
-gmx energy -f npt.edr -o npt.xvg
+gmx grompp -f mdp/npt.mdp -o npt.tpr -pp npt.top -po npt.mdp -c nvt.gro
+gmx mdrun -s npt.tpr -o npt.trr -x npt.xtc -c npt.gro -e npt.edr -g npt.log
+
+echo "Pressure" | gmx energy -f npt.edr -o npt.xvg
+sed -i 's/@/#/g' npt.xvg
 gnuplot -e "set terminal png size 600, 450; set output 'npt.png'; plot 'npt.xvg' w l"
 
 # Production
-gmx grompp -f mdp/prd.mdp -o prd.tpr -pp prd.top -po prd.mdp -c eql2.gro
+gmx grompp -f mdp/prd.mdp -o prd.tpr -pp prd.top -po prd.mdp -c npt.gro
 gmx mdrun -s prd.tpr -o prd.trr -x prd.xtc -c prd.gro -e prd.edr -g prd.log -v
