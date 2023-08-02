@@ -12,7 +12,6 @@
 program rdf
 
     use gmxfort_trajectory
-    use gmxfort_utils
     use waterbox_utils
 
     implicit none
@@ -78,7 +77,7 @@ program rdf
     avg_num_density = 0
     do f=1, trj%nframes
         call flatten_box(trj%box(f), box)
-        diag = magnitude(dble(box / 2))
+        diag = get_magnitude(box / 2)
         if (diag > max_dist) then
             max_dist = diag
         endif
@@ -109,10 +108,11 @@ program rdf
     frequencies = 0
     do f=1, trj%nframes
         write(*, "(A, I0)", advance="no") "\rOn frame ", f
+        call flatten_box(trj%box(f), box)
         ! i and j are oxygens
         do i=1, trj%natoms("OW") - 1
             do j=i + 1, trj%natoms("OW")
-                dist = distance(dble(trj%x(f, i, "OW")), dble(trj%x(f, j, "OW")), dble(trj%box(f)))
+                dist = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "OW"), box)
                 bin = int(dist / dr) + 1
                 frequencies(bin) = frequencies(bin) + 2
             enddo

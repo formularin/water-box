@@ -6,7 +6,6 @@
 program count_waters
 
     use gmxfort_trajectory
-    use gmxfort_utils
     use waterbox_utils
 
     implicit none
@@ -65,7 +64,7 @@ program count_waters
         avg_cell_vol = avg_cell_vol + box(1) * box(2) * box(3)
         count = 0
         do i=1, trj%natoms("OW")
-            if (distance(dble(center), dble(trj%x(f, i, "OW")), dble(trj%box(f))) < radius) then
+            if (get_distance(center, trj%x(f, i, "OW"), trj%box(f)) < radius) then
                 count = count + 1
             endif
         enddo

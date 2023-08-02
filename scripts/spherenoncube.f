@@ -7,13 +7,13 @@
 ************************************************************************
         
 	implicit none
-	real*8 box_dims(1:3)
-	real*8 r,dr,r1,r2,r3,pi,rr,box,boy,boz,b(4)
-	real*8 L1,L2,L3,L4,L5,L6,L7,ss,ss1,ss2,ss3
-        real*8 limit0,limit1,b_func,func,dv
+	real box_dims(1:3)
+	real r,dr,r1,r2,r3,pi,rr,box,boy,boz,b(4)
+	real L1,L2,L3,L4,L5,L6,L7,ss,ss1,ss2,ss3
+        real limit0,limit1,b_func,func,dv
 	integer i,nr,nrmax
 	parameter (nrmax=5000)
-	real*8 v(0:nrmax)
+	real v(0:nrmax)
         common /sphere/r,b_func
         external func
 	
@@ -242,7 +242,7 @@ c Compare L3 and L4
 	end
 	
 	function func(y)
-	real*8 func,r,y,b_func
+	real func,r,y,b_func
 	common /sphere/r,b_func
 	
 c       write(*,*)r,b,y,r**2-y**2-(b/2.)**2
@@ -260,7 +260,7 @@ c       stop'problem evaluating func'
 	end
 	
 	SUBROUTINE QROMB(FUNC,A,B,SS)
-	implicit real*8 (a-h,o-z)
+	implicit real (a-h,o-z)
 	integer n
 	parameter (n=20)
 	it = n

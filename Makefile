@@ -4,7 +4,7 @@ F90 = gfortran
 F77 = gfortran -ffixed-form
 RM = trash
 LIBGMXFLAGS = -I/usr/local/include `pkg-config --libs libgmxfort`
-F90FLAGS = -Wall -fbackslash
+F90FLAGS = -Wall -fbackslash -g -fcheck=all
 F77FLAGS = 
 PROGRAMS = bin/diffusion bin/rdf bin/count_waters
 
