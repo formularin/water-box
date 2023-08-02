@@ -1,6 +1,6 @@
 # water-box
 
-Trajectory files and scripts for analyzing a GROMCAS simulation of SPC/E water.
+Trajectory files and scripts for analyzing a GROMACS simulation of SPC/E water.
 
 ## Compilation
 
