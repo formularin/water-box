@@ -5,7 +5,7 @@ Trajectory files and scripts for analyzing a GROMACS simulation of SPC/E water.
 ## Compilation
 
 * Install [libgmxfort](https://github.com/formularin/libgmxfort)
-* Run the command: `make`
+* Run the command: `make` from the project home directory
 
 ## Usage
 
