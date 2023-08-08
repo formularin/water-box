@@ -30,14 +30,16 @@ program rdf
     real, parameter :: pi = 4.d0*atan(1.0)
 
     type(Trajectory) :: trj
-    integer :: num_bins, i, f, j, k, bin, freq
+    integer :: num_bins, num_atoms, i, f, j, k, bin, freq
     real :: dr, max_dist, diag, avg_num_density, dist
-    real :: edge, vol, rdf_u, rdf_n
-    real, dimension(:), allocatable :: volumes, right_bin_edges, rdf_unnorm, rdf_norm
-    integer, dimension(:), allocatable :: frequencies
+    real :: edge, vol, rdf_u, rdf_n, err, mean
+    real, dimension(:), allocatable :: volumes, right_bin_edges, rdf_unnorm, rdf_norm, stdevs
+    integer, dimension(:), allocatable :: frequency_sums
+    integer, dimension(:, :), allocatable :: frequencies
     real, dimension(0:nrmax) :: box_volumes
     real, dimension(1:3) :: box
     real, dimension(1:4) :: distances
+    integer, dimension(1:4) :: bins
 
     ! Start timing program
     call system_clock(count_init, count_rate, count_max)
@@ -70,10 +72,17 @@ program rdf
     allocate(right_bin_edges(1:num_bins))
     allocate(rdf_norm(1:num_bins))
     allocate(rdf_unnorm(1:num_bins))
-    allocate(frequencies(1:num_bins))
+    allocate(frequency_sums(1:num_bins))
+    allocate(stdevs(1:num_bins))
 
     ! Read XTC file (entire thing loaded into memory)
     call trj%read(traj_file, index_file)
+
+    num_atoms = trj%natoms("OW")
+    if (mode == "HH") then
+        num_atoms = num_atoms * 2
+    endif
+    allocate(frequencies(1:num_bins, 1:num_atoms))
 
     write(*, "(A)") "Precomputing volumes..."
     ! Calculate the largest possible distance (diagonal of the biggest cell)
@@ -121,7 +130,8 @@ program rdf
                 if (mode == "OO") then
                     dist = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "OW"), box)
                     bin = int(dist / dr) + 1
-                    frequencies(bin) = frequencies(bin) + 2
+                    frequencies(bin, i) = frequencies(bin, i) + 1
+                    frequencies(bin, j) = frequencies(bin, j) + 1
                 else if (mode == "OH") then
                     ! i*3 - 1 and i*3 - 2 are the Hydrogen atoms for oxygen i
                     distances(1) = get_distance(trj%x(f, i, "OW"), trj%x(f, j * 3 - 1), box)
@@ -130,7 +140,11 @@ program rdf
                     distances(4) = get_distance(trj%x(f, j, "OW"), trj%x(f, i * 3 - 2), box)
                     do k=1, 4
                         bin = int(distances(k) / dr) + 1
-                        frequencies(bin) = frequencies(bin) + 1
+                        if (k < 3) then
+                            frequencies(bin, i) = frequencies(bin, i) + 1
+                        else
+                            frequencies(bin, j) = frequencies(bin, j) + 1
+                        endif
                     enddo
                 else if (mode == "HH") then
                     distances(1) = get_distance(trj%x(f, j * 3 - 1), trj%x(f, i * 3 - 1), box)
@@ -138,9 +152,17 @@ program rdf
                     distances(3) = get_distance(trj%x(f, j * 3 - 2), trj%x(f, i * 3 - 1), box)
                     distances(4) = get_distance(trj%x(f, j * 3 - 2), trj%x(f, i * 3 - 2), box)
                     do k=1, 4
-                        bin = int(distances(k) / dr) + 1
-                        frequencies(bin) = frequencies(bin) + 1
+                        bins(k) = int(distances(k) / dr) + 1
                     enddo
+                    ! Update frequencies for each hydrogen atom
+                    frequencies(bins(1), j * 2) = frequencies(bins(1), j * 2) + 1
+                    frequencies(bins(1), i * 2) = frequencies(bins(1), i * 2) + 1
+                    frequencies(bins(2), j * 2) = frequencies(bins(2), j * 2) + 1
+                    frequencies(bins(2), i * 2 - 1) = frequencies(bins(2), i * 2 - 1) + 1
+                    frequencies(bins(3), j * 2 - 1) = frequencies(bins(1), j * 2 - 1) + 1
+                    frequencies(bins(3), i * 2) = frequencies(bins(1), i * 2) + 1
+                    frequencies(bins(4), j * 2 - 1) = frequencies(bins(2), j * 2 - 1) + 1
+                    frequencies(bins(4), i * 2 - 1) = frequencies(bins(2), i * 2 - 1) + 1
                 endif
             enddo
         enddo
@@ -149,11 +171,19 @@ program rdf
 
     ! Write output to file
     write(*, "(A)") "Normalizing and writing to "//trim(output_file)//"..."
-    rdf_unnorm = frequencies / volumes
+    do i=1, num_bins
+        frequency_sums(i) = sum(frequencies(i, :))
+        mean = frequency_sums(i) / num_atoms
+        stdevs(i) = sqrt(sum((frequencies(i, :) - mean) ** 2) / (num_atoms - 1))
+    enddo
+    rdf_unnorm = frequency_sums / volumes
+    stdevs = stdevs / volumes
     if (mode == "OO") then
         rdf_norm = rdf_unnorm / avg_num_density
+        stdevs = stdevs / avg_num_density
     else
         rdf_norm = rdf_unnorm / (2 * avg_num_density)
+        stdevs = stdevs / (2 * avg_num_density)
     endif
 
     open(unit=10, file=output_file, iostat=err_status, iomsg=err_iomsg)
@@ -164,11 +194,12 @@ program rdf
 
     do i=1, num_bins
         edge = dr * i
-        freq = frequencies(i)
+        freq = frequency_sums(i)
         vol = volumes(i)
         rdf_u = rdf_unnorm(i)
         rdf_n = rdf_norm(i)
-        write (unit=10, fmt="(F25.17, I9, F35.17, F25.17, F25.17)") edge, freq, vol, rdf_u, rdf_n
+        err = stdevs(i)
+        write (unit=10, fmt="(F25.17, I9, F35.17, F25.17, F25.17, F25.17)") edge, freq, vol, rdf_u, rdf_n, err
     enddo
 
     close(unit=10)
