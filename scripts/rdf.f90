@@ -1,6 +1,7 @@
-! Calculates the O-O radial distribution function of water, including the corners of the box.
+! Calculates the radial distribution function of water, including the corners of the box.
 ! Written by Arin Khare
-! Options: -xtc, -ndx, -num_bins, -o
+! Options: -xtc, -ndx, -num_bins, -mode, -o
+! Mode can be either "OO", "OH," or "HH"
 ! Note that the max number of bins is 5000
 ! Outputs an XVG file containing these columns:
 ! - The right edge of each bin, in nm
@@ -8,6 +9,7 @@
 ! - The total volume for each bin (over all frames and oxygens)
 ! - The number density corresponding to each bin (unnormalized RDF)
 ! - The normalized RDF value for each bin
+! - The standard deviation (error bar) for each bin
 
 program rdf
 
@@ -18,7 +20,7 @@ program rdf
 
     ! File I/O, program timing, command-line args, etc.
     integer :: count_init, count_rate, count_max, count_final, err_status
-    character(256) :: arg, traj_file, index_file, output_file
+    character(256) :: arg, traj_file, index_file, output_file, mode
     character(256) :: num_bins_str, err_iomsg
     real :: time_init, time_final, elapsed_time
 
@@ -28,13 +30,14 @@ program rdf
     real, parameter :: pi = 4.d0*atan(1.0)
 
     type(Trajectory) :: trj
-    integer :: num_bins, i, f, j, bin, freq
+    integer :: num_bins, i, f, j, k, bin, freq
     real :: dr, max_dist, diag, avg_num_density, dist
     real :: edge, vol, rdf_u, rdf_n
     real, dimension(:), allocatable :: volumes, right_bin_edges, rdf_unnorm, rdf_norm
     integer, dimension(:), allocatable :: frequencies
     real, dimension(0:nrmax) :: box_volumes
     real, dimension(1:3) :: box
+    real, dimension(1:4) :: distances
 
     ! Start timing program
     call system_clock(count_init, count_rate, count_max)
@@ -45,6 +48,7 @@ program rdf
     index_file = "simulations/water/spce.ndx"
     num_bins_str = "1000"
     output_file = "results/rdf.xvg"
+    mode = "OO"
 
     do i=0, command_argument_count()
         call get_command_argument(i, arg)
@@ -54,6 +58,8 @@ program rdf
             call get_command_argument(i + 1, index_file)
         else if (arg == "-num_bins") then
             call get_command_argument(i + 1, num_bins_str)
+        else if (arg == "-mode") then
+            call get_command_argument(i + 1, mode)
         else if (arg == "-o") then
             call get_command_argument(i + 1, output_file)
         endif
@@ -112,9 +118,30 @@ program rdf
         ! i and j are oxygens
         do i=1, trj%natoms("OW") - 1
             do j=i + 1, trj%natoms("OW")
-                dist = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "OW"), box)
-                bin = int(dist / dr) + 1
-                frequencies(bin) = frequencies(bin) + 2
+                if (mode == "OO") then
+                    dist = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "OW"), box)
+                    bin = int(dist / dr) + 1
+                    frequencies(bin) = frequencies(bin) + 2
+                else if (mode == "OH") then
+                    ! i*3 - 1 and i*3 - 2 are the Hydrogen atoms for oxygen i
+                    distances(1) = get_distance(trj%x(f, i, "OW"), trj%x(f, j * 3 - 1), box)
+                    distances(2) = get_distance(trj%x(f, i, "OW"), trj%x(f, j * 3 - 2), box)
+                    distances(3) = get_distance(trj%x(f, j, "OW"), trj%x(f, i * 3 - 1), box)
+                    distances(4) = get_distance(trj%x(f, j, "OW"), trj%x(f, i * 3 - 2), box)
+                    do k=1, 4
+                        bin = int(distances(k) / dr) + 1
+                        frequencies(bin) = frequencies(bin) + 1
+                    enddo
+                else if (mode == "HH") then
+                    distances(1) = get_distance(trj%x(f, j * 3 - 1), trj%x(f, i * 3 - 1), box)
+                    distances(2) = get_distance(trj%x(f, j * 3 - 1), trj%x(f, i * 3 - 2), box)
+                    distances(3) = get_distance(trj%x(f, j * 3 - 2), trj%x(f, i * 3 - 1), box)
+                    distances(4) = get_distance(trj%x(f, j * 3 - 2), trj%x(f, i * 3 - 2), box)
+                    do k=1, 4
+                        bin = int(distances(k) / dr) + 1
+                        frequencies(bin) = frequencies(bin) + 1
+                    enddo
+                endif
             enddo
         enddo
     enddo
@@ -123,7 +150,11 @@ program rdf
     ! Write output to file
     write(*, "(A)") "Normalizing and writing to "//trim(output_file)//"..."
     rdf_unnorm = frequencies / volumes
-    rdf_norm = rdf_unnorm / avg_num_density
+    if (mode == "OO") then
+        rdf_norm = rdf_unnorm / avg_num_density
+    else
+        rdf_norm = rdf_unnorm / (2 * avg_num_density)
+    endif
 
     open(unit=10, file=output_file, iostat=err_status, iomsg=err_iomsg)
     if (err_status /= 0) then
