@@ -58,6 +58,17 @@ contains
         get_magnitude = sqrt(get_magnitude2(x))
     end function get_magnitude
 
+    ! Dot product of two 3-d vectors
+    real function get_dot_product(a, b)
+        implicit none
+        real, dimension(1:3) :: a, b
+        integer :: d
+        get_dot_product = 0
+        do d=1,3
+            get_dot_product = get_dot_product + a(d) * b(d)
+        enddo
+    end function get_dot_product
+
     ! Adjusts all values in xr (displacement vector) according to the minimum image convention.
     function get_min_image(xr, box)
         implicit none

@@ -6,7 +6,7 @@ RM = trash
 LIBGMXFLAGS = -I/usr/local/include `pkg-config --libs libgmxfort`
 F90FLAGS = -Wall -fbackslash -g -fcheck=all
 F77FLAGS = 
-PROGRAMS = bin/diffusion bin/rdf bin/count_waters
+PROGRAMS = bin/diffusion bin/rdf bin/count_waters bin/hbonds
 
 all: setup $(PROGRAMS)
 
