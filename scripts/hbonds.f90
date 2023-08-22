@@ -4,8 +4,8 @@
 ! Writes to an XVG file with the following data:
 ! - The number of water molecules in a comment
 ! - Two columns (length equal to number of frames in simulation):
-!   - One column containing the sum of the number of nearest neighbors for all waters.
-!   - One column containing the sum of the number of hydrogen bonds for all waters.
+!   - One column containing the number of pairs of waters with oxygens within 0.35nm.
+!   - One column containing the number of hydrogen bonds.
 
 program hbonds
 
@@ -23,12 +23,12 @@ program hbonds
     ! Program-specifc declarations
     real, parameter :: PI = 3.1415925635897932384626433
     real, parameter :: NEAREST_NEIGHBOR_DIST = 0.35
-    real, parameter :: HBOND_ANGLE = pi / 6.
+    real, parameter :: HBOND_ANGLE = PI / 6.
 
     type(Trajectory) :: trj
     integer, dimension(:), allocatable :: num_nn, num_hbonded
-    real, dimension(1:3) :: oo_vec, oh_vec
-    real :: oo_dist, oh_dist, min_dist, dot_prod
+    real, dimension(1:3) :: oo_vec, oh_vec, min_oh_vec, box
+    real :: oo_dist, oh_dist, min_oh_dist, dot_prod
     integer :: h_donor
     
     ! Start timing program
@@ -62,37 +62,41 @@ program hbonds
 
     do f=1, trj%nframes
         write(*, "(A, I0)", advance="no") "\rOn frame ", f
+        call flatten_box(trj%box(f), box)
         do i=1, trj%natoms("OW")
             do j=i + 1, trj%natoms("OW")
-                oo_dist = get_magnitude(trj%x(f, i, "OW") - trj%x(f, j, "OW"))
+                oo_dist = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "OW"), box)
                 if (oo_dist < NEAREST_NEIGHBOR_DIST) then
-                    num_nn(f) = num_nn(f) + 2
+                    num_nn(f) = num_nn(f) + 1
 
                     ! Assume hydrogen donor is i.
-                    oo_vec = trj%x(f, i, "OW") - trj%x(f, j, "OW")
+                    oo_vec = get_min_image(trj%x(f, i, "OW") - trj%x(f, j, "OW"), box)
 
                     ! Get the smallest O-H vector from the 4 possibilities.
-                    oh_vec = trj%x(f, i, "HW1") - trj%x(f, j, "OW")
-                    min_dist = get_magnitude(oh_vec)
+                    min_oh_vec = get_min_image(trj%x(f, i, "HW1") - trj%x(f, j, "OW"), box)
+                    min_oh_dist = get_magnitude(min_oh_vec)
                     h_donor = i
 
-                    oh_dist = get_magnitude(trj%x(f, i, "HW2") - trj%x(f, j, "OW"))
-                    if (oh_dist < min_dist) then
-                        min_dist = oh_dist
-                        oh_vec = trj%x(f, i, "HW2") - trj%x(f, j, "OW")
+                    oh_vec = get_min_image(trj%x(f, i, "HW2") - trj%x(f, j, "OW"), box)
+                    oh_dist = get_magnitude(oh_vec)
+                    if (oh_dist < min_oh_dist) then
+                        min_oh_dist = oh_dist
+                        min_oh_vec = oh_vec
                     endif
 
-                    oh_dist = get_magnitude(trj%x(f, j, "HW1") - trj%x(f, i, "OW"))
-                    if (oh_dist < min_dist) then
-                        min_dist = oh_dist
-                        oh_vec = trj%x(f, j, "HW1") - trj%x(f, i, "OW")
+                    oh_vec = get_min_image(trj%x(f, j, "HW1") - trj%x(f, i, "OW"), box)
+                    oh_dist = get_magnitude(oh_vec)
+                    if (oh_dist < min_oh_dist) then
+                        min_oh_dist = oh_dist
+                        min_oh_vec = oh_vec
                         h_donor = j
                     endif
 
-                    oh_dist = get_magnitude(trj%x(f, j, "HW2") - trj%x(f, i, "OW"))
-                    if (oh_dist < min_dist) then
-                        min_dist = oh_dist
-                        oh_vec = trj%x(f, j, "HW2") - trj%x(f, i, "OW")
+                    oh_vec = get_min_image(trj%x(f, j, "HW2") - trj%x(f, i, "OW"), box)
+                    oh_dist = get_magnitude(oh_vec)
+                    if (oh_dist < min_oh_dist) then
+                        min_oh_dist = oh_dist
+                        min_oh_vec = oh_vec
                         h_donor = j
                     endif
 
@@ -101,8 +105,8 @@ program hbonds
                     endif
 
                     dot_prod = get_dot_product(oh_vec, oo_vec)
-                    if (acos(dot_prod / (min_dist * oo_dist)) < HBOND_ANGLE) then
-                        num_hbonded(f) = num_hbonded(f) + 2
+                    if (acos(dot_prod / (min_oh_dist * oo_dist)) < HBOND_ANGLE) then
+                        num_hbonded(f) = num_hbonded(f) + 1
                     endif
                 endif
             enddo

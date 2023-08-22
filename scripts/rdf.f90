@@ -133,12 +133,10 @@ program rdf
                     frequencies(bin, i) = frequencies(bin, i) + 1
                     frequencies(bin, j) = frequencies(bin, j) + 1
                 else if (mode == "OH") then
-                    ! i*3 and i*3 - 1 are the Hydrogen atoms for oxygen i
-                    ! TODO: figure out how to create groups in the index for each type of hydrogen
-                    distances(1) = get_distance(trj%x(f, i, "OW"), trj%x(f, j * 3), box)
-                    distances(2) = get_distance(trj%x(f, i, "OW"), trj%x(f, j * 3 - 1), box)
-                    distances(3) = get_distance(trj%x(f, j, "OW"), trj%x(f, i * 3), box)
-                    distances(4) = get_distance(trj%x(f, j, "OW"), trj%x(f, i * 3 - 1), box)
+                    distances(1) = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "HW"), box)
+                    distances(2) = get_distance(trj%x(f, i, "OW"), trj%x(f, j, "HW2"), box)
+                    distances(3) = get_distance(trj%x(f, j, "OW"), trj%x(f, i, "HW"), box)
+                    distances(4) = get_distance(trj%x(f, j, "OW"), trj%x(f, i, "HW2"), box)
                     do k=1, 4
                         bin = int(distances(k) / dr) + 1
                         if (k < 3) then
@@ -148,10 +146,10 @@ program rdf
                         endif
                     enddo
                 else if (mode == "HH") then
-                    distances(1) = get_distance(trj%x(f, j * 3), trj%x(f, i * 3), box)
-                    distances(2) = get_distance(trj%x(f, j * 3), trj%x(f, i * 3 - 1), box)
-                    distances(3) = get_distance(trj%x(f, j * 3 - 1), trj%x(f, i * 3), box)
-                    distances(4) = get_distance(trj%x(f, j * 3 - 1), trj%x(f, i * 3 - 1), box)
+                    distances(1) = get_distance(trj%x(f, j, "HW"), trj%x(f, i, "HW"), box)
+                    distances(2) = get_distance(trj%x(f, j, "HW"), trj%x(f, i, "HW2"), box)
+                    distances(3) = get_distance(trj%x(f, j, "HW2"), trj%x(f, i, "HW"), box)
+                    distances(4) = get_distance(trj%x(f, j, "HW2"), trj%x(f, i, "HW2"), box)
                     do k=1, 4
                         bins(k) = int(distances(k) / dr) + 1
                     enddo
